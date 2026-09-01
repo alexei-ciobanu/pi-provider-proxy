@@ -1,0 +1,7 @@
+version = 1
+reject_ambient_proxy = true
+
+[providers.openai-codex]
+enabled = true
+proxy_url = "http://127.0.0.1:8118"
+transport = "sse"
