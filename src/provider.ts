@@ -1,6 +1,5 @@
-import type { OAuthCredential, Provider } from "@earendil-works/pi-ai";
-import { openaiCodexProvider } from "@earendil-works/pi-ai/providers/openai-codex";
-import { xaiProvider } from "@earendil-works/pi-ai/providers/xai";
+import type { Api, OAuthCredential, Provider } from "@earendil-works/pi-ai";
+import { builtinProviders } from "@earendil-works/pi-ai/providers/all";
 import type { ProviderProxyTransport } from "./proxy-transport.js";
 
 const OPENAI_TOKEN_URL = "https://auth.openai.com/oauth/token";
@@ -10,6 +9,12 @@ const XAI_TOKEN_URL = "https://auth.x.ai/oauth2/token";
 const XAI_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828";
 const XAI_REFRESH_SKEW_MS = 5 * 60 * 1000;
 const XAI_DEFAULT_TOKEN_LIFETIME_SECONDS = 3600;
+
+function builtinProvider<TApi extends Api>(id: string): Provider<TApi> {
+  const provider = builtinProviders().find((candidate) => candidate.id === id);
+  if (!provider) throw new Error(`Built-in ${id} provider is unavailable`);
+  return provider as Provider<TApi>;
+}
 
 function decodeJwtPayload(token: string): Record<string, unknown> | undefined {
   try {
@@ -138,7 +143,7 @@ export async function refreshXaiCredential(
 export function createProxiedOpenAICodexProvider(
   transport: ProviderProxyTransport,
 ): Provider<"openai-codex-responses"> {
-  const base = openaiCodexProvider();
+  const base = builtinProvider<"openai-codex-responses">("openai-codex");
   const oauth = base.auth.oauth;
   if (!oauth) throw new Error("Built-in openai-codex OAuth provider is unavailable");
 
@@ -157,7 +162,7 @@ export function createProxiedOpenAICodexProvider(
 }
 
 export function createProxiedXaiProvider(transport: ProviderProxyTransport): Provider<"openai-responses"> {
-  const base = xaiProvider();
+  const base = builtinProvider<"openai-responses">("xai");
   const oauth = base.auth.oauth;
   if (!oauth) throw new Error("Built-in xAI OAuth provider is unavailable");
 
