@@ -3,8 +3,10 @@ import test from "node:test";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
 import {
   createProxiedOpenAICodexProvider,
+  createProxiedOpenAIProvider,
   createProxiedXaiProvider,
   refreshOpenAICodexCredential,
+  refreshOpenAICredential,
   refreshXaiCredential,
 } from "../src/provider.js";
 import { ProviderProxyTransport } from "../src/proxy-transport.js";
@@ -91,4 +93,42 @@ test("xAI OAuth refresh uses the provider-scoped fetch and retains an unrotated 
   assert.equal(refreshed.access, "new-access");
   assert.equal(refreshed.refresh, "old-refresh");
   assert.equal(refreshed.expires > Date.now(), true);
+});
+
+test("OpenAI provider preserves API key and ChatGPT login and proxies refresh", async () => {
+  const { transport, calls } = mockTransport({
+    access_token: "new",
+    refresh_token: "rotated",
+    scope: "openid chatgpt.tokens.use.direct",
+    expires_in: 3600,
+  });
+  const provider = createProxiedOpenAIProvider(transport);
+  assert.equal(provider.id, "openai");
+  assert.ok(provider.auth.apiKey);
+  assert.equal(typeof provider.auth.oauth?.login, "function");
+  assert.equal(typeof provider.classify, "function");
+  const updated = await refreshOpenAICredential(
+    { ...credential, clientId: "issued-client" },
+    new AbortController().signal,
+    transport,
+  );
+  assert.equal(calls[0]?.input, "https://auth.openai.com/api/accounts/oauth/token");
+  const body = calls[0]?.init?.body as URLSearchParams;
+  assert.equal(body.get("client_id"), "issued-client");
+  assert.equal(body.get("resource"), "https://api.openai.com/v1");
+  assert.equal(updated.refresh, "rotated");
+  assert.deepEqual(updated.scopes, ["openid", "chatgpt.tokens.use.direct"]);
+});
+
+test("OpenAI refresh rejects a grant without direct access", async () => {
+  const { transport } = mockTransport({
+    access_token: "new",
+    refresh_token: "rotated",
+    scope: "openid",
+    expires_in: 3600,
+  });
+  await assert.rejects(
+    refreshOpenAICredential({ ...credential, clientId: "client" }, new AbortController().signal, transport),
+    /chatgpt.tokens.use.direct/,
+  );
 });

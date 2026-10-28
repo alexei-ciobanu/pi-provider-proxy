@@ -179,3 +179,71 @@ export function createProxiedXaiProvider(transport: ProviderProxyTransport): Pro
     streamSimple: (model, context, options) => base.streamSimple(model, context, transport.requestOptions(options)),
   };
 }
+
+export async function refreshOpenAICredential(
+  credential: OAuthCredential,
+  signal: AbortSignal,
+  transport: ProviderProxyTransport,
+  tokenUrl = "https://auth.openai.com/api/accounts/oauth/token",
+): Promise<OAuthCredential> {
+  const clientId = credential.clientId;
+  if (typeof clientId !== "string" || !clientId.trim()) {
+    throw new Error("Stored OpenAI OAuth credential does not contain an issued client ID; reconnect ChatGPT");
+  }
+  const response = await transport.fetch(tokenUrl, {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      refresh_token: credential.refresh,
+      resource: "https://api.openai.com/v1",
+    }),
+    signal,
+  });
+  if (!response.ok) throw new Error(`OpenAI OAuth token request failed (${response.status}): ${await response.text()}`);
+  const token = await responseBody(response);
+  if (
+    typeof token.access_token !== "string" ||
+    !token.access_token.trim() ||
+    typeof token.refresh_token !== "string" ||
+    !token.refresh_token.trim() ||
+    typeof token.scope !== "string" ||
+    !token.scope.trim() ||
+    typeof token.expires_in !== "number" ||
+    !Number.isFinite(token.expires_in) ||
+    token.expires_in <= 0
+  ) {
+    throw new Error("OpenAI OAuth token response has invalid fields");
+  }
+  const scopes = token.scope.trim().split(/\s+/);
+  if (!scopes.includes("chatgpt.tokens.use.direct"))
+    throw new Error("OpenAI OAuth grant did not include chatgpt.tokens.use.direct");
+  return {
+    type: "oauth",
+    access: token.access_token,
+    refresh: token.refresh_token,
+    expires: Date.now() + token.expires_in * 1000 - 180_000,
+    clientId,
+    scopes,
+  };
+}
+
+export function createProxiedOpenAIProvider(transport: ProviderProxyTransport): Provider<"openai-responses"> {
+  const base = builtinProvider<"openai-responses">("openai");
+  const oauth = base.auth.oauth;
+  if (!oauth) throw new Error("Built-in openai ChatGPT OAuth provider is unavailable; Pi 1.4 is required");
+  const classify = base.classify;
+  return {
+    ...base,
+    auth: {
+      ...base.auth,
+      oauth: { ...oauth, refresh: (credential, signal) => refreshOpenAICredential(credential, signal, transport) },
+    },
+    stream: (model, context, options) => base.stream(model, context, transport.requestOptions(options)),
+    streamSimple: (model, context, options) => base.streamSimple(model, context, transport.requestOptions(options)),
+    ...(classify
+      ? { classify: (model, context, options) => classify(model, context, transport.requestOptions(options)) }
+      : {}),
+  };
+}

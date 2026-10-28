@@ -68,3 +68,8 @@ test("resolves a relative config override", () => {
 test("detects only non-empty ambient proxy variables", () => {
   assert.deepEqual(configuredAmbientProxyVariables({ HTTP_PROXY: "http://proxy", HTTPS_PROXY: " " }), ["HTTP_PROXY"]);
 });
+
+test("accepts the OpenAI provider", () => {
+  const config = parseProxyConfig('version = 1\n[providers.openai]\nproxy_url = "http://127.0.0.1:8118"\n');
+  assert.equal(config.providers.openai?.proxyUrl, "http://127.0.0.1:8118");
+});

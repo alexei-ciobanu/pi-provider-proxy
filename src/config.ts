@@ -6,7 +6,7 @@ import { parse } from "smol-toml";
 
 const CONFIG_ENV = "PI_PROVIDER_PROXY_CONFIG";
 const TRANSPORTS = new Set<Transport>(["auto", "sse", "websocket", "websocket-cached"]);
-export const SUPPORTED_PROVIDER_IDS = ["openai-codex", "xai"] as const;
+export const SUPPORTED_PROVIDER_IDS = ["openai", "openai-codex", "xai"] as const;
 export type SupportedProviderId = (typeof SUPPORTED_PROVIDER_IDS)[number];
 
 export interface ProviderProxyConfig {

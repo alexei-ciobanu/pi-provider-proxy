@@ -7,10 +7,11 @@ import {
   SUPPORTED_PROVIDER_IDS,
   type SupportedProviderId,
 } from "./config.js";
-import { createProxiedOpenAICodexProvider, createProxiedXaiProvider } from "./provider.js";
+import { createProxiedOpenAICodexProvider, createProxiedOpenAIProvider, createProxiedXaiProvider } from "./provider.js";
 import { ProviderProxyTransport } from "./proxy-transport.js";
 
 function providerFor(id: SupportedProviderId, transport: ProviderProxyTransport) {
+  if (id === "openai") return createProxiedOpenAIProvider(transport);
   if (id === "openai-codex") return createProxiedOpenAICodexProvider(transport);
   return createProxiedXaiProvider(transport);
 }

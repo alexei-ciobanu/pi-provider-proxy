@@ -7,7 +7,8 @@ startup requests, extensions, and commands run by the bash tool therefore retain
 
 ## Supported providers
 
-- `openai-codex`, including SSE, WebSocket, and automatic OAuth token refresh requests
+- `openai`, including API-key and ChatGPT subscription requests, classifier requests, and automatic OAuth token refresh
+- `openai-codex` (legacy), including SSE, WebSocket, and automatic OAuth token refresh requests
 - `xai`, including `xai/grok-4.5` inference and automatic OAuth token refresh requests
 
 Each provider retains Pi's built-in model catalogue and existing sign-in. The extension proxies every model under an
@@ -27,6 +28,10 @@ Create `~/.config/pi-provider-proxy/config.toml`:
 version = 1
 reject_ambient_proxy = true
 
+[providers.openai]
+enabled = true
+proxy_url = "http://127.0.0.1:8118"
+
 [providers.openai-codex]
 enabled = true
 proxy_url = "http://127.0.0.1:8118"
@@ -36,6 +41,8 @@ transport = "auto"
 enabled = true
 proxy_url = "http://127.0.0.1:8118"
 ```
+
+Requires Pi 1.4.x. Only the supported provider IDs listed above are accepted; adding another requires an implementation and tests.
 
 Provider sections are optional and can use different proxy URLs. Set `enabled = false` to retain a section without
 overriding that provider.

@@ -1,4 +1,4 @@
-import type { ProviderRequestOptions, Transport } from "@earendil-works/pi-ai";
+import type { Transport } from "@earendil-works/pi-ai";
 import { ProxyAgent, type RequestInit as UndiciRequestInit, fetch as undiciFetch } from "undici";
 
 const NEVER_BYPASS_PROXY = "__pi_openai_codex_proxy_no_bypass__";
@@ -21,7 +21,7 @@ export class ProviderProxyTransport {
     };
   }
 
-  requestOptions<T extends ProviderRequestOptions>(
+  requestOptions<T extends { env?: Record<string, string | undefined> }>(
     options?: T,
   ): T & { fetch: typeof globalThis.fetch; env: Record<string, string>; transport?: Transport } {
     const proxyEnvironment = {
