@@ -11,7 +11,7 @@ startup requests, extensions, and commands run by the bash tool therefore retain
 - `openai-codex` (legacy), including SSE, WebSocket, and automatic OAuth token refresh requests
 - `xai`, including `xai/grok-4.5` inference and automatic OAuth token refresh requests
 
-Each provider retains Pi's built-in model catalogue and existing sign-in. The extension proxies every model under an
+Each provider retains Pi's built-in models and existing sign-in. The extension also refreshes its Pi model catalogue through the configured provider proxy. The extension proxies every model under an
 enabled provider; for example, enabling `xai` proxies all direct xAI models, not only `grok-4.5`.
 
 The interactive `/login` browser/device-code exchanges still use Pi's built-in OAuth flows and normal process transport.
